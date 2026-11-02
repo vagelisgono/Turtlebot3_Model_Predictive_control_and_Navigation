@@ -853,17 +853,4 @@ The eight-step horizon is:
 8 * 0.1 = 0.8 seconds
 ```
 
-### H. Command execution and stopping logic
 
-Like the previous MPC script, the program executes **only the first optimized command pair**, then reads new odometry and LiDAR measurements and optimizes again.
-
-In addition to the cost function, the code has a separate hard-stop check:
-
-```text
-if closest_LiDAR_distance < 0.18 m:
-    publish zero linear and angular velocity
-```
-
-It also stops if measurements are stale or if there is no waypoint. This hard-stop rule is **separate from** the `0.30 m` soft obstacle penalty in the MPC cost.
-
-Because the prediction horizon is only `0.8 s`, the laser geometry is approximate, and the obstacle cost is soft, the controller may still approach obstacles too closely or become stuck. Those are limitations of the method actually implemented, not behaviors that the mathematical optimization guarantees to avoid.
