@@ -165,9 +165,8 @@ Kw    = 0.9942472
 tau_w = 0.032835 s
 ```
 
-The angular time constant is shorter than the collector's `0.05 s` logging interval, so the data do not resolve that fast transient particularly well. The fitted values are useful working estimates, not exact physical constants.### Linear Velocity Identification Results
+The angular time constant is shorter than the collector's `0.05 s` logging interval, so the data do not resolve that fast transient particularly well. The fitted values are useful working estimates, not exact physical constants.
 
-<<<<<<< HEAD:README.md
 ### Linear Velocity Identification Results
 
 <img width="900" height="500" alt="Figure_1" src="https://github.com/user-attachments/assets/625e3813-efca-4a25-8e52-317a3bdfd120" />
@@ -181,19 +180,6 @@ identified first-order model prediction.
 <img width="900" height="500" alt="Figure_2" src="https://github.com/user-attachments/assets/1bd0e27e-52d4-49fa-878c-9a5f594ae1b1" />
 
 
-=======
-<img width="900" height="500" alt="Figure_1" src="https://github.com/user-attachments/assets/625e3813-efca-4a25-8e52-317a3bdfd120" />
-
-
-The measured linear velocity is compared with the
-identified first-order model prediction.
-
-### Angular Velocity Identification Results
-
-<img width="900" height="500" alt="Figure_2" src="https://github.com/user-attachments/assets/1bd0e27e-52d4-49fa-878c-9a5f594ae1b1" />
-
-
->>>>>>> e2a41a4eee34291da9e87dfbb0cc0ab20f303a25:README(4).md
 The measured angular velocity is compared with the
 identified first-order model prediction.
 
@@ -236,7 +222,6 @@ The complete mathematical model combines robot kinematics with the identified fi
 dx/dt     = v * cos(theta)
 dy/dt     = v * sin(theta)
 dtheta/dt = w
-<<<<<<< HEAD:README.md
 
 dv/dt     = (Kv*v_cmd - v) / tau_v
 dw/dt     = (Kw*w_cmd - w) / tau_w
@@ -252,23 +237,6 @@ Together, these equations form our five-state nonlinear mathematical model.
 
 Since the model is implemented on a computer, we need to predict the robot's state at discrete time intervals.
 
-=======
-
-dv/dt     = (Kv*v_cmd - v) / tau_v
-dw/dt     = (Kw*w_cmd - w) / tau_w
-```
-
-The first three equations describe how the robot's position and orientation change.
-
-The last two equations describe how its actual velocities respond to the commanded velocities.
-
-Together, these equations form our five-state nonlinear mathematical model.
-
-### B. Discrete-Time Velocity Prediction
-
-Since the model is implemented on a computer, we need to predict the robot's state at discrete time intervals.
-
->>>>>>> e2a41a4eee34291da9e87dfbb0cc0ab20f303a25:README(4).md
 For a constant command during a time interval `dt`, the exact first-order velocity update is:
 
 ```text
@@ -303,19 +271,11 @@ Then:
 
 ```text
 av = exp(-0.1/0.0774945)
-<<<<<<< HEAD:README.md
 
 av ≈ 0.275
 
 v_next = 0.275*0 + 1.0011045*(1-0.275)*0.1
 
-=======
-
-av ≈ 0.275
-
-v_next = 0.275*0 + 1.0011045*(1-0.275)*0.1
-
->>>>>>> e2a41a4eee34291da9e87dfbb0cc0ab20f303a25:README(4).md
 v_next ≈ 0.0726 m/s
 ```
 
@@ -416,7 +376,6 @@ This prevents incorrect angular errors when the orientation crosses the boundary
 ### E. Model Validation Results
 
 The recorded validation results were:
-<<<<<<< HEAD:README.md
 
 | Measurement | RMSE |
 |---|---:|
@@ -439,30 +398,7 @@ The figure compares the actual TurtleBot3 trajectory measured from odometry with
 The predicted trajectory follows the measured trajectory closely, with small deviations.
 
 This validation is important because the same five-state mathematical model is subsequently used by the Model Predictive Controller (MPC) to predict the robot's future movement.
-=======
->>>>>>> e2a41a4eee34291da9e87dfbb0cc0ab20f303a25:README(4).md
 
-| Measurement | RMSE |
-|---|---:|
-| Linear Velocity | 0.00413 m/s |
-| Angular Velocity | 0.0733 rad/s |
-| Angular Velocity (after 0.25 s) | 0.00934 rad/s |
-| Position | 0.01234 m |
-| Orientation | 0.0566 rad |
-
-The larger angular velocity RMSE over the full interval is associated with an initial transient that the model does not reproduce accurately.
-
-Excluding the initial 0.25 seconds produces a smaller angular velocity RMSE.
-
-### F. Predicted vs Measured Trajectory
-
-<img width="640" height="480" alt="TurtleBot3 Model Validation" src="https://github.com/user-attachments/assets/52ddbe17-a4fe-4083-a0f7-aa6e5a9f44f3" />
-
-The figure compares the actual TurtleBot3 trajectory measured from odometry with the trajectory predicted by the identified mathematical model.
-
-The predicted trajectory follows the measured trajectory closely, with small deviations.
-
-This validation is important because the same five-state mathematical model is subsequently used by the Model Predictive Controller (MPC) to predict the robot's future movement.
 ---
 
 ## 4. `nonlinear_controller.py`
@@ -984,14 +920,5 @@ These numbers come from individual simulation runs; they should not be treated a
 
 ---
 
-<<<<<<< HEAD:README.md
 ## 8. Controller Demonstration Video
 [Screencast from 03-11-2026 06:00:37 ΜΜ.webm](https://github.com/user-attachments/assets/d094057a-20b0-4f9a-b258-274cbcd73ad8)
-=======
-## 10. Controller Demonstration Video
-[Screencast from 03-11-2026 06:00:37 ΜΜ.webm](https://github.com/user-attachments/assets/d094057a-20b0-4f9a-b258-274cbcd73ad8)
-
-
-
-
->>>>>>> e2a41a4eee34291da9e87dfbb0cc0ab20f303a25:README(4).md
