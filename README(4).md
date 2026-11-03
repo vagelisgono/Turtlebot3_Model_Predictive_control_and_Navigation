@@ -1,6 +1,6 @@
 # TurtleBot3 — Explanation of Each Python Program and Its Mathematics
 
-## 1. `collect_turtlebot_data.py`
+## 1. `data_collection.py`
 
 ### What the program does
 
@@ -56,7 +56,7 @@ It also records the odometry timestamp. This matters because the most recently r
 
 ---
 
-## 2. `identify_turtlebot.py`
+## 2. `system_identification.py`
 
 ### What the program does
 
@@ -183,7 +183,7 @@ identified first-order model prediction.
 
 ---
 
-## 3. `turtlebot_full_identification.py`
+## 3. `model_validation.py`
 
 ### What the program does
 
