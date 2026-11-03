@@ -165,7 +165,21 @@ Kw    = 0.9942472
 tau_w = 0.032835 s
 ```
 
-The angular time constant is shorter than the collector's `0.05 s` logging interval, so the data do not resolve that fast transient particularly well. The fitted values are useful working estimates, not exact physical constants.
+The angular time constant is shorter than the collector's `0.05 s` logging interval, so the data do not resolve that fast transient particularly well. The fitted values are useful working estimates, not exact physical constants.### Linear Velocity Identification Results
+
+![Linear Velocity Identification] <img width="900" height="500" alt="Figure_1" src="https://github.com/user-attachments/assets/625e3813-efca-4a25-8e52-317a3bdfd120" />
+
+
+The measured linear velocity is compared with the
+identified first-order model prediction.
+
+### Angular Velocity Identification Results
+
+![Angular Velocity Identification] <img width="900" height="500" alt="Figure_2" src="https://github.com/user-attachments/assets/1bd0e27e-52d4-49fa-878c-9a5f594ae1b1" />
+
+
+The measured angular velocity is compared with the
+identified first-order model prediction.
 
 ---
 
@@ -405,6 +419,15 @@ Predictions are compared with recorded odometry:
 RMSE(v) = sqrt(mean((v_pred - v_meas)^2))
 RMSE(w) = sqrt(mean((w_pred - w_meas)^2))
 ```
+
+### Model Validation Results
+
+![Model Validation] <img width="640" height="480" alt="Figure_3" src="https://github.com/user-attachments/assets/52ddbe17-a4fe-4083-a0f7-aa6e5a9f44f3" />
+
+
+Comparison between the measured TurtleBot3 trajectory
+and the trajectory predicted by the identified
+five-state mathematical model.
 
 For heading, an angular difference should be wrapped into the range from `-pi` to `pi` so that angles near `+pi` and `-pi` are treated as nearly identical:
 
