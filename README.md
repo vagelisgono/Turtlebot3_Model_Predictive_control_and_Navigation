@@ -701,7 +701,7 @@ These coordinates are used as fixed obstacle points over one MPC optimization. T
 Only sampled LiDAR returns closer than `LASER_RANGE` are used for the repulsive vector. The code uses:
 
 ```text
-LASER_RANGE = 0.90 m
+LASER_RANGE = 1.10 m
 
 weight_i = (1 - r_i/LASER_RANGE)^2
 ```
@@ -795,9 +795,9 @@ It adds a penalty only if that distance becomes smaller than the safe distance:
 
 ```text
 SAFE_DISTANCE   = 0.30 m
-OBSTACLE_WEIGHT = 200
+OBSTACLE_WEIGHT = 250
 
-J_obstacle = 200 * sum_i [max(0, 0.30 - d_i)^2]
+J_obstacle = 250 * sum_i [max(0, 0.30 - d_i)^2]
 ```
 
 If `d_i >= 0.30 m`, the penalty for that point is zero. If `d_i < 0.30 m`, the penalty grows quadratically as the predicted robot position gets closer to the obstacle.
@@ -838,7 +838,7 @@ Like the previous MPC script, the program executes **only the first optimized co
 In addition to the cost function, the code has a separate hard-stop check:
 
 ```text
-if closest_LiDAR_distance < 0.18 m:
+if closest_LiDAR_distance < 0.10 m:
     publish zero linear and angular velocity
 ```
 
