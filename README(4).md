@@ -867,3 +867,83 @@ if closest_LiDAR_distance < 0.18 m:
 It also stops if measurements are stale or if there is no waypoint. This hard-stop rule is **separate from** the `0.30 m` soft obstacle penalty in the MPC cost.
 
 Because the prediction horizon is only `0.8 s`, the laser geometry is approximate, and the obstacle cost is soft, the controller may still approach obstacles too closely or become stuck. Those are limitations of the method actually implemented, not behaviors that the mathematical optimization guarantees to avoid.
+
+
+---
+
+## 9. Identified Model Parameters and Recorded Results
+
+### A. Identified velocity-model parameters
+
+These are the parameters estimated from TurtleBot3/Gazebo motion data and used in the five-state prediction model.
+
+| Parameter | Estimated value | Meaning |
+| --- | ---: | --- |
+| `Kv` | `1.0011045` | Steady-state gain for linear velocity |
+| `tau_v` | `0.0774945 s` | Linear velocity time constant |
+| `Kw` | `0.9942472` | Steady-state gain for angular velocity |
+| `tau_w` | `0.032835 s` | Angular velocity time constant |
+
+The corresponding continuous-time velocity models are:
+
+```text
+dv/dt = (1.0011045*v_cmd - v) / 0.0774945
+
+dw/dt = (0.9942472*w_cmd - w) / 0.032835
+```
+
+The time constants are estimates from sampled simulation data, not exact physical constants. In particular, the short angular time constant is difficult to resolve reliably at the available sampling rate.
+
+### B. Model-validation RMSE
+
+The following results were recorded while comparing predictions from the identified model with TurtleBot3 odometry. They describe **model-prediction error**, not trajectory-tracking error.
+
+| Validation metric | Recorded RMSE |
+| --- | ---: |
+| Linear velocity | `0.00413 m/s` |
+| Angular velocity (full evaluated interval) | `0.0733 rad/s` |
+| Angular velocity (after the first `0.25 s`) | `0.00934 rad/s` |
+| Position | `0.01234 m` |
+| Heading | `0.0566 rad` |
+
+The larger full-interval angular RMSE reflects an initial transient in the recorded test. Excluding the first `0.25 s` changes the evaluation interval; it does **not** mean the original full-interval result was `0.00934 rad/s`.
+
+The position RMSE is computed from the 2D distance between predicted and measured positions:
+
+```text
+position_error_i = sqrt((x_pred_i - x_odom_i)^2
+                      + (y_pred_i - y_odom_i)^2)
+
+position_RMSE = sqrt(mean(position_error_i^2))
+```
+
+### C. Circular trajectory-tracking RMSE
+
+These are separately recorded **controller-tracking** results for the circular-reference experiment (`R = 0.5 m`, `v_ref = 0.1 m/s`). They are different from the model-validation results above.
+
+| Controller / run | Position RMSE |
+| --- | ---: |
+| Nonlinear feedback controller | `0.0048 m` |
+| MPC controller (earlier run) | `0.0028 m` |
+| MPC controller (later run) | `0.0041 m` |
+
+These numbers come from individual simulation runs; they should not be treated as averaged benchmark results or proof that one controller is consistently better under identical conditions.
+
+### D. MPC experiment settings
+
+| Setting | Value |
+| --- | ---: |
+| Prediction horizon (`N`) | `8` steps |
+| Prediction step (`dt`) | `0.1 s` |
+| Total predicted time | `0.8 s` |
+| Number of optimized command values | `16` |
+| Linear command bounds | `0.0` to `0.16 m/s` |
+| Angular command bounds | `-1.0` to `1.0 rad/s` |
+| Optimization method | `L-BFGS-B` |
+
+---
+
+## 10. Controller Demonstration Video
+
+<!-- Add your controller demonstration video here. -->
+
