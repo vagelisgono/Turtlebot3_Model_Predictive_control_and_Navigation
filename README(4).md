@@ -187,168 +187,34 @@ identified first-order model prediction.
 
 ### What the program does
 
-This is a more complete system-identification experiment. One script sends test commands, records odometry with timestamps, estimates the same four first-order parameters, predicts the robot's trajectory, and checks the predictions against a separate combined-motion part of the experiment.
+This program validates the mathematical model obtained from System Identification.
 
-It records command-change times independently of odometry times. This improves the treatment of input timing.
+It uses the previously estimated parameters to predict the TurtleBot3's linear velocity, angular velocity, position, and orientation.
 
-### A. Velocity prediction with zero-order hold
+The predictions are then compared with the actual measurements from `/odom` to evaluate the model's accuracy.
 
-The input is treated as **constant between consecutive command changes**. This assumption is called a zero-order hold (ZOH).
+### A. Five-State Mathematical Model
 
-Starting with:
-
-```text
-dy/dt = (K*u - y) / tau
-```
-
-if `u` stays constant for `dt` seconds, the exact velocity update is:
-
-```text
-y_next = K*u + (y_now - K*u) * exp(-dt/tau)
-```
-
-Equivalently, if:
-
-```text
-a = exp(-dt/tau)
-```
-
-then:
-
-```text
-y_next = a*y_now + K*(1-a)*u
-```
-
-The first term carries part of the previous velocity forward. The second term moves the predicted velocity toward the new command's steady-state value.
-
-For forward and angular velocities separately:
-
-```text
-v_next = av*v + Kv*(1-av)*v_cmd
-av     = exp(-dt/tau_v)
-
-w_next = aw*w + Kw*(1-aw)*w_cmd
-aw     = exp(-dt/tau_w)
-```
-
-The function `first_order_response()` even splits a time interval when a command changes *between* two odometry measurements. It applies the correct command over each smaller interval instead of pretending the command changed at an odometry timestamp.
-
-### B. Parameter estimation and separate validation
-
-The identification still minimizes squared velocity errors:
-
-```text
-J(K, tau) = sum over training samples:
-
-            [velocity_predicted_i(K,tau) - velocity_measured_i]^2
-```
-
-The script fits the parameters using the early rest/step/stop measurements. The combined-motion portion is excluded from fitting. That allows the same identified model to be tested on a different combination of forward and turning commands.
-
-### C. Converting predicted velocity into a predicted path
-
-Velocity is not yet position. To predict where the robot moves, the program uses differential-drive **planar kinematics**:
-
-```text
-dx/dt     = v * cos(theta)
-dy/dt     = v * sin(theta)
-dtheta/dt = w
-```
-
-The forward speed `v` acts along the robot's heading `theta`. The turning rate `w` changes that heading.
-
-For each recorded time interval, the code approximates the average velocities:
-
-```text
-v_avg = (v_now + v_next) / 2
-w_avg = (w_now + w_next) / 2
-```
-
-It then estimates the heading halfway through the step:
-
-```text
-theta_mid = theta_now + w_avg*dt/2
-```
-
-Finally, it updates the position and heading:
-
-```text
-x_next     = x_now + v_avg*cos(theta_mid)*dt
-y_next     = y_now + v_avg*sin(theta_mid)*dt
-theta_next = theta_now + w_avg*dt
-```
-
-This is **midpoint-style numerical integration** for the pose. Unlike the first-order velocity update, the pose update is an approximation, not the exact solution of the full turning trajectory.
-
-### D. Comparing predicted and measured trajectories
-
-The program computes two paths:
-
-- **Ideal-command path:** integrate `v_cmd` and `w_cmd` directly, as though the measured velocities instantly matched the commands.
-- **Identified-model path:** predict `v` and `w` first, then integrate those predicted velocities.
-
-To evaluate position during the held-out section, the code starts from the measured pose at that section's beginning and calculates:
-
-```text
-position_error_i^2 = (x_pred_i - x_odom_i)^2
-                   + (y_pred_i - y_odom_i)^2
-
-position_RMSE = sqrt((1/n) * sum from i=1 to n position_error_i^2)
-```
-
-Velocity RMSE is computed separately for `v` and `w`. The distinction matters: a model can predict speed well but still accumulate position error when integrated over time.
-
----
-
-## 4. `turtlebot_full_identification_commented.py`
-
-### What the program does
-
-This is the **commented, educational version** of the full identification experiment. It explains the role of the ROS messages, command timing, numerical prediction, parameter fitting, trajectory integration, and validation inside the code.
-
-### The mathematics
-
-It does not introduce a new model. It uses the same chain of calculations as the previous program:
-
-```text
-1. Dynamic model:
-   dy/dt = (K*u - y)/tau
-
-2. Velocity prediction for a constant command:
-   y_next = K*u + (y_now - K*u)*exp(-dt/tau)
-
-3. Fit parameters:
-   minimize sum of squared prediction errors over K and tau
-
-4. Integrate planar movement:
-   dx/dt = v*cos(theta)
-   dy/dt = v*sin(theta)
-   dtheta/dt = w
-
-5. Compare with odometry:
-   RMSE = sqrt(mean(prediction_error^2))
-```
-
-The purpose of this version is to make each mathematical calculation easier to follow in the Python implementation; it is not a separate control method.
-
----
-
-## 5. `model_validation.py`
-
-### What the program does
-
-This program checks whether the identified model can reproduce **both the robot's velocities and its position** from recorded commands. It starts at a measured robot state, predicts how that state changes, and compares the predictions with odometry. The same prediction equations are later used by MPC.
-
-### A. Five-state mathematical model
-
-The state contains five numbers and the input contains two:
+The robot's state is:
 
 ```text
 X = [x, y, theta, v, w]
-u = [v_cmd, w_cmd]
 ```
 
-The continuous-time model combines kinematics and the identified first-order dynamics:
+Where:
+
+- `x, y`: Robot position (m)
+- `theta`: Robot orientation (rad)
+- `v`: Actual linear velocity (m/s)
+- `w`: Actual angular velocity (rad/s)
+
+The control inputs are:
+
+```text
+U = [v_cmd, w_cmd]
+```
+
+The complete mathematical model combines robot kinematics with the identified first-order velocity dynamics:
 
 ```text
 dx/dt     = v * cos(theta)
@@ -359,94 +225,180 @@ dv/dt     = (Kv*v_cmd - v) / tau_v
 dw/dt     = (Kw*w_cmd - w) / tau_w
 ```
 
-The first three equations connect velocity to **position and orientation**. The last two connect **commanded velocities to measured velocities**. Together they form a five-state nonlinear model: the sine and cosine terms make the overall model nonlinear.
+The first three equations describe how the robot's position and orientation change.
 
-### B. Predicting velocities one step ahead
+The last two equations describe how its actual velocities respond to the commanded velocities.
 
-For each prediction interval `dt`:
+Together, these equations form our five-state nonlinear mathematical model.
+
+### B. Discrete-Time Velocity Prediction
+
+Since the model is implemented on a computer, we need to predict the robot's state at discrete time intervals.
+
+For a constant command during a time interval `dt`, the exact first-order velocity update is:
 
 ```text
 av = exp(-dt/tau_v)
 aw = exp(-dt/tau_w)
 
-v_next = av*v_now + Kv*(1-av)*v_cmd
-w_next = aw*w_now + Kw*(1-aw)*w_cmd
+v_next = av*v + Kv*(1-av)*v_cmd
+w_next = aw*w + Kw*(1-aw)*w_cmd
 ```
 
-These equations predict the velocity the robot will have *after* the command has acted for `dt` seconds. They do not simply assume `v_next = v_cmd` and `w_next = w_cmd`.
+The coefficients `av` and `aw` determine how much of the previous velocity remains after one time step.
 
-For example, with `dt = 0.1 s`, `v_now = 0`, and `v_cmd = 0.10 m/s`:
+The identified model parameters are:
 
 ```text
-av     = exp(-0.1/0.0774945) ~= 0.275
-v_next = 0.275*0 + 1.0011045*(1 - 0.275)*0.10
-       ~= 0.0726 m/s
+Kv    = 1.0011045
+tau_v = 0.0774945 s
+
+Kw    = 0.9942472
+tau_w = 0.032835 s
 ```
 
-So the model predicts that the robot has not yet fully reached the requested speed after the first step.
-
-### C. Predicting position and orientation
-
-The new velocities are used to calculate the average motion during the interval:
+For example, suppose:
 
 ```text
-v_avg     = (v_now + v_next)/2
-w_avg     = (w_now + w_next)/2
-theta_mid = theta_now + w_avg*dt/2
-
-x_next     = x_now + v_avg*cos(theta_mid)*dt
-y_next     = y_now + v_avg*sin(theta_mid)*dt
-theta_next = theta_now + w_avg*dt
+dt    = 0.1 s
+v     = 0 m/s
+v_cmd = 0.1 m/s
 ```
 
-This makes one prediction function:
+Then:
 
 ```text
-X_next = f(X_now, u_now)
+av = exp(-0.1/0.0774945)
+
+av ≈ 0.275
+
+v_next = 0.275*0 + 1.0011045*(1-0.275)*0.1
+
+v_next ≈ 0.0726 m/s
 ```
 
-Calling the function repeatedly predicts a complete path:
+Therefore, the model predicts that after 0.1 seconds, the robot's velocity will be approximately 0.0726 m/s rather than immediately reaching 0.1 m/s.
+
+### C. Position and Orientation Prediction
+
+After calculating the next linear and angular velocities, the program predicts the robot's next position and orientation.
+
+First, it calculates the average velocities:
 
 ```text
-X0 --u0--> X1 --u1--> X2 --u2--> X3 ...
+v_avg = (v + v_next)/2
+
+w_avg = (w + w_next)/2
 ```
 
-### D. Measuring model error
-
-Predictions are compared with recorded odometry:
+Then it calculates the orientation at the midpoint of the time interval:
 
 ```text
-RMSE(v) = sqrt(mean((v_pred - v_meas)^2))
-RMSE(w) = sqrt(mean((w_pred - w_meas)^2))
+theta_mid = theta + w_avg*dt/2
 ```
 
-### Model Validation Results
-
-<img width="640" height="480" alt="Figure_3" src="https://github.com/user-attachments/assets/52ddbe17-a4fe-4083-a0f7-aa6e5a9f44f3" />
-
-
-Comparison between the measured TurtleBot3 trajectory
-and the trajectory predicted by the identified
-five-state mathematical model.
-
-For heading, an angular difference should be wrapped into the range from `-pi` to `pi` so that angles near `+pi` and `-pi` are treated as nearly identical:
+Finally, it updates the position and orientation:
 
 ```text
-angle_error = atan2(sin(theta_pred - theta_meas),
-                    cos(theta_pred - theta_meas))
+x_next = x + v_avg*cos(theta_mid)*dt
+
+y_next = y + v_avg*sin(theta_mid)*dt
+
+theta_next = theta + w_avg*dt
 ```
 
-Position error can be measured using the two-dimensional distance:
+This is a midpoint-style numerical integration method.
+
+Using the average velocities and midpoint orientation provides a more accurate approximation of the robot's motion than simply using the initial velocity and heading.
+
+The complete prediction process can be represented as:
 
 ```text
-position_error = sqrt((x_pred - x_meas)^2 + (y_pred - y_meas)^2)
+X_next = f(X_current, U_current)
 ```
 
-The point of this program is to check the **prediction model itself**, independently of whether a controller can follow a path. The model must be able to predict movement before it can be useful inside MPC.
+By repeating this calculation, the program predicts the robot's trajectory:
 
+```text
+X0 --U0--> X1 --U1--> X2 --U2--> X3 ...
+```
+
+### D. Model Validation and RMSE
+
+To evaluate the model, the program compares the predicted states with the actual odometry measurements.
+
+The Root Mean Squared Error (RMSE) is calculated as:
+
+```text
+RMSE = sqrt((1/N) * sum((predicted - measured)^2))
+```
+
+For linear velocity:
+
+```text
+RMSE_v = sqrt(mean((v_pred - v_measured)^2))
+```
+
+For angular velocity:
+
+```text
+RMSE_w = sqrt(mean((w_pred - w_measured)^2))
+```
+
+For position, the error is calculated using both X and Y coordinates:
+
+```text
+error_position = sqrt(
+    (x_pred - x_measured)^2 +
+    (y_pred - y_measured)^2
+)
+```
+
+The position RMSE is:
+
+```text
+RMSE_position = sqrt(mean(error_position^2))
+```
+
+For orientation, the angular difference is wrapped to the interval [-pi, pi]:
+
+```text
+error_theta = atan2(
+    sin(theta_pred - theta_measured),
+    cos(theta_pred - theta_measured)
+)
+```
+
+This prevents incorrect angular errors when the orientation crosses the boundary between -pi and pi.
+
+### E. Model Validation Results
+
+The recorded validation results were:
+
+| Measurement | RMSE |
+|---|---:|
+| Linear Velocity | 0.00413 m/s |
+| Angular Velocity | 0.0733 rad/s |
+| Angular Velocity (after 0.25 s) | 0.00934 rad/s |
+| Position | 0.01234 m |
+| Orientation | 0.0566 rad |
+
+The larger angular velocity RMSE over the full interval is associated with an initial transient that the model does not reproduce accurately.
+
+Excluding the initial 0.25 seconds produces a smaller angular velocity RMSE.
+
+### F. Predicted vs Measured Trajectory
+
+<img width="640" height="480" alt="TurtleBot3 Model Validation" src="https://github.com/user-attachments/assets/52ddbe17-a4fe-4083-a0f7-aa6e5a9f44f3" />
+
+The figure compares the actual TurtleBot3 trajectory measured from odometry with the trajectory predicted by the identified mathematical model.
+
+The predicted trajectory follows the measured trajectory closely, with small deviations.
+
+This validation is important because the same five-state mathematical model is subsequently used by the Model Predictive Controller (MPC) to predict the robot's future movement.
 ---
 
-## 6. `nonlinear_controller.py`
+## 4. `nonlinear_controller.py`
 
 ### What the program does
 
@@ -544,7 +496,7 @@ The control law is nonlinear because of the `sin` and `cos` functions. It uses *
 
 ---
 
-## 7. `mpc_controller.py`
+## 5. `mpc_controller.py`
 
 ### What the program does
 
@@ -688,7 +640,7 @@ This reuse of a previous solution is called a **warm start**.
 
 ---
 
-## 8. `mpc_waypoint_lidar.py`
+## 6. `mpc_waypoint_lidar.py`
 
 ### What the program does
 
