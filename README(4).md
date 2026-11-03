@@ -924,7 +924,6 @@ These are separately recorded **controller-tracking** results for the circular-r
 | Controller / run | Position RMSE |
 | --- | ---: |
 | Nonlinear feedback controller | `0.0048 m` |
-| MPC controller (earlier run) | `0.0028 m` |
 | MPC controller (later run) | `0.0041 m` |
 
 These numbers come from individual simulation runs; they should not be treated as averaged benchmark results or proof that one controller is consistently better under identical conditions.
