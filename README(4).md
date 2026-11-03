@@ -853,8 +853,8 @@ The eight-step horizon is:
 8 * 0.1 = 0.8 seconds
 ```
 
-### H. Command execution and stopping logic
 
+<<<<<<< HEAD:README(4).md
 Like the previous MPC script, the program executes **only the first optimized command pair**, then reads new odometry and LiDAR measurements and optimizes again.
 
 In addition to the cost function, the code has a separate hard-stop check:
@@ -947,3 +947,5 @@ These numbers come from individual simulation runs; they should not be treated a
 
 <!-- Add your controller demonstration video here. -->
 
+=======
+>>>>>>> daca32313efce16d1d306fba059a33a463cea552:README(3).md
